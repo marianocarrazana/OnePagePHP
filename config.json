@@ -1,0 +1,10 @@
+{
+    "paths": {
+        "templates": "views",
+        "php": "controllers",
+        "sections": "views/sections"
+    },
+    "default_title": "OnePage",
+    "site_url": "//localhost/OnePagePHP",
+    "eval_scripts": true
+}

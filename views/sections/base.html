@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name=viewport content="width=device-width, initial-scale=1">
+	<title>{{title}}</title>
+	<script type="text/javascript" src="public/scripts/onepage.js"></script>
+	<link rel="stylesheet" type="text/css" href="public/styles/flexbox.css"/>
+	<style type="text/css">
+	#loading{
+		background: rgba(5,5,5,.66);
+		position: fixed;
+		width: 100%;height: 100%;z-index: 9;top:0;left:0;
+		display: none;
+	}
+	#app{
+		position: absolute;
+		width:100%;height:100%;
+		top:0;left:0;
+	}
+	#app>header{
+		text-align: center;
+		font-size: 150%;
+		padding: 15px;
+		background: red;
+	}
+	#app>div>aside{
+		background: green;
+		padding: 15px;
+	}
+	#app>div>aside a{
+		color:white!important;
+	}
+	#app>footer{
+		background: black;
+		color:blue;
+	}
+	</style>
+</head>
+<body>
+	<div id="loading" style="">
+		<div class="row flex-justify-center flex-align-center" style="height: 100%">
+			<span style="color:white">Loading...</span>
+		</div>
+	</div>
+	<div class="column" id="app">
+		<header>OnePagePHP</header>
+		<div class="row flex-grow">
+			<aside>{{include("navigation.html")}}</aside>
+			<div class="flex-grow" id="content">{% block content %}{% endblock %}</div>
+		</div>
+		<footer><a href="https://github.com/marianocarrazana/OnePagePHP">Sauce on Github</a></footer>
+	</div>
+</body>
+</html>
