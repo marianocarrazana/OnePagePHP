@@ -1,10 +1,12 @@
 {
     "paths": {
-        "templates": "views",
-        "php": "controllers",
-        "sections": "views/sections"
+        "templates": "src/views",
+        "php": "src/controllers",
+        "sections": "src/sections"
     },
     "default_title": "OnePage",
     "site_url": "//localhost/OnePagePHP",
-    "eval_scripts": true
+    "eval_scripts": true,
+    "automatic_render":true,
+    "root_dir":"/full/dir/of/your/project"
 }

@@ -11,7 +11,7 @@ Features:
 * Single page navigation: load every page of the same domain/url inside a content element with history support
 * Twig templates support
 * Server Side Rendering
-* Very lightweight and fast for the client and server: the js script's weight is only 2,9kB (no gzipped) and the php 30\~kB
+* Very lightweight and fast for the client and server: the js script's weight is only 3kB (no gzipped) and the php 10kB
 * Auto-render templates: you actually don't need to know how to program in php at all, you can add your twig templates inside "views" folder and it will render when the url match the name of the file(without the extension)
 * Auto load controllers and templates: of course if you know php it will better, just add your controller in "controllers" folder and it will render the template with the same name of the controller automatically, if you prefer render manually another template you can do it too
 * Custom routes: you can create custom routes programmatically for APIs similar to laravel or express
@@ -60,9 +60,13 @@ Open the config.json file and adapt the content for your site.
 
 `eval_scripts`: (true or false) scripts shared with `OnePage::addScript` will be evaluated with eval() function, this is unsafe if your using a non https site.
 
+`automatic_render`: (true or false) if it will search files inside the controllers/templates and automatically render it.
+
+`root_dir`: the full path of your project in your file system, this will used to solve the all paths defined in the paths.php/templates/sections.
+
 **Create a simple page**
 
-If you want to add a page accessible in with the url `mysite.com/mypage` just add a file with the name `mypage.html` inside the `views` folder, remember you dont need to define the headers or sections that are shared for all pages inside this document, if you wanna change the default design edit the `views/base.html` file just remember to leave the `{% block content %}{% endblock %}` inside `#content` element and `onepage.js` script link for the SPA featured. For a root urls like [`mysite.com/`](https://mysite.com/) edit the `index.html` inside the `views` folder.
+If you want to add a page accessible in with the url `mysite.com/mypage` just add a file with the name `mypage.html` inside the `src/views` folder, remember you dont need to define the headers or sections that are shared for all pages inside this document, if you wanna change the default design edit the `src/sections/base.html` file just remember to leave the `{% block content %}{% endblock %}` inside `#content` element for the SPA featured. For a root urls like [`mysite.com/`](https://mysite.com/) edit the `index.html` inside the `src/views` folder.
 
 Inside the mypage.html put this:
 
@@ -74,9 +78,9 @@ This will render in "Hello world! My name is" without the  {{name}} part, that i
 
 **Add a controller for your page**
 
-Create a `mypage.php` inside the `controllers` folder with this content:
+Create a `mypage.php` inside the `src/controllers` folder with this content:
 
-    $this->addVariable("name","Maria");
+    OnePage::addVariable("name","Maria");
 
 Reload [`mysite.com/mypage`](https://mysite.com/mypage) and we will see "Hello world! My name is Maria".
 
@@ -93,3 +97,20 @@ This is very simple, just add an `A` element with a relative path inside the hre
     </ul>
 
 Reload the page and try to click in all the links and you will see how the content is loaded without full reloading the page.
+
+# Router
+
+This is just a example, the url and the variables support regular expressions.
+
+    use OnePagePHP\Router;
+    Router::addRoute("say/#something#", function ($vars) {
+        OnePage::renderString("{{something}}", $vars);
+    }, ["GET", "POST"]); //this will render on "say/hello" URL the text "hello"
+
+`$onepage` is the object created with the class OnePage
+
+`#something#` is a variable name(is similar to {var} in others routers systems), you  can get the content with `$vars['something']`
+
+A route more complex can be `"(sum|add)/#num1|number#/#num2|\d+#"` where `(sum|add)` are regexp and `num1` and `num2` variables are numbers(`number` can be a regular expression too like `\d+`).
+
+**I need help with development/documentation/testing/english so if someone is interested please send me a message.**
