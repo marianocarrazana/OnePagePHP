@@ -6,24 +6,25 @@ namespace OnePagePHP;
  */
 class OnePage
 {
-    protected static $variables     = []; //variables for twig templates
-    protected static $scripts       = []; //scripts to execute on page load
-    protected static $rendered      = false;
-    protected static $fullMode      = true;
-    protected static $config        = [];
-    protected static $phpPath       = "";
-    protected static $templateFile  = "";
-    protected static $templateString  = "";
-    protected static $sectionsFiles = [];
-    protected static $root_dir      = "";
-    protected static $url           = "";
+    protected static $variables        = []; //variables for twig templates
+    protected static $scripts          = []; //scripts to execute on page load
+    protected static $rendered         = false;
+    protected static $fullMode         = true;
+    protected static $config           = [];
+    protected static $controllerPath   = "";
+    protected static $templateFile     = "";
+    protected static $templateString   = "";
+    protected static $sectionsFiles    = [];
+    protected static $root_dir         = "";
+    protected static $url              = "";
     protected static $automatic_render = false;
-    public static $twig = null;
+    public static $twigExtensions      = [];
+    public static $twig                = null;
 
     public static function init(array $config)
     {
-        OnePage::$config   = $config;
-        OnePage::$fullMode = !isset($_GET["onepage"]);
+        OnePage::$config           = $config;
+        OnePage::$fullMode         = !isset($_GET["onepage"]);
         OnePage::$automatic_render = $config["automatic_render"];
         if (preg_match('/[^\/]$/', OnePage::$config['site_url'])) {
             OnePage::$config['site_url'] .= '/';
@@ -45,23 +46,32 @@ class OnePage
         $path              = join("/", $paths);
         OnePage::$root_dir = $config["root_dir"];
         foreach (OnePage::$config["paths"] as $key => $value) {
+            /* set absolute paths */
             OnePage::$config["paths"][$key] = OnePage::$root_dir . "/{$value}/";
         }
-        OnePage::$phpPath      = OnePage::$config["paths"]["php"] . "{$path}.php";
-        OnePage::$templateFile = "{$path}.html";
-        $sections              = scandir(OnePage::$config["paths"]["sections"]);
+        OnePage::$controllerPath = OnePage::$config["paths"]["controllers"] . "{$path}.php";
+        OnePage::$templateFile   = "{$path}.{$config['templates_extension']}";
+        $sections                = scandir(OnePage::$config["paths"]["sections"]);
         foreach ($sections as $i) {
             if (preg_match('/[^\.]/', $i)) {
-                OnePage::$sectionsFiles[$i] = file_get_contents(OnePage::$root_dir ."/{$config['paths']['sections']}/". $i);
+                OnePage::$sectionsFiles[$i] = file_get_contents(OnePage::$root_dir . "/{$config['paths']['sections']}/" . $i);
             }
         }
     }
 
-    public static function render(string $name, array $variables = null, bool $echo = true,bool $is_string = false)
+    public static function addTwigExtension($class, callable $callback, $extension)
     {
+        OnePage::$twigExtensions[] = ["class" => $class, "callback" => $callback, "extension" => $extension];
+    }
+
+    public static function render(
+        string $name,
+        array $variables = null,
+        bool $is_string = false
+    ) {
         if (!$is_string) {
-//file render
-            $path = OnePage::$config["paths"]["templates"] . $name;
+            /*file render*/
+            $path = OnePage::$config["paths"]["views"] . $name;
             if (!file_exists($path)) {
                 trigger_error("Template not found", E_USER_ERROR);
             }
@@ -79,7 +89,7 @@ class OnePage
             $onepagejs    = file_get_contents(__dir__ . "/onepage.js"); //include onepagejs in library mode too
             $eval_scripts = OnePage::$config['eval_scripts'];
             $template .= "<script type='text/javascript'>{$onepagejs};OnePage.site_url='{{site_url}}';OnePage.updateLinks();OnePage.eval_scripts={$eval_scripts};" . join(";", OnePage::$scripts) . "</script>";
-            $template = "{% extends 'base.html' %}{% block content %}{$template}{% endblock %}";
+            $template = "{% extends 'base." . OnePage::$config['templates_extension'] . "' %}{% block content %}{$template}{% endblock %}";
         }
         $variables['site_url']         = OnePage::$config['site_url'];
         OnePage::$sectionsFiles[$name] = $template;
@@ -90,26 +100,39 @@ class OnePage
             /*convert relative links url in absolute*/
             OnePage::$sectionsFiles[$key] = preg_replace('/(href|src)=[\'\"](?!#|(https?:)|(\/\/)|({{))([^\'\"]+)[\'\"]/i', '\1="' . OnePage::$config['site_url'] . '\5"', $value);
         }
-        $loader = new \Twig\Loader\ArrayLoader(OnePage::$sectionsFiles);
-        OnePage::$twig   = new \Twig\Environment($loader);
-        OnePage::$templateString = $name;
-        OnePage::$variables = $variables;
-        if($echo)OnePage::echoRender();
-    }
+        $loader        = new \Twig\Loader\ArrayLoader(OnePage::$sectionsFiles);
+        OnePage::$twig = new \Twig\Environment($loader);
 
-    static function echoRender(){
-        $output = OnePage::$twig->render(OnePage::$templateString, OnePage::$variables);
-        if (OnePage::$fullMode) {
-            echo $output;
-        } else {
-            header('Content-Type: application/json');
-            echo json_encode([
-                "title"   => OnePage::$variables["title"],
-                "content" => $output,
-                'scripts' => join(";", OnePage::$scripts),
-            ]);
+        OnePage::$twig->addRuntimeLoader(new class implements \Twig\RuntimeLoader\RuntimeLoaderInterface
+        {
+            public function load($class)
+            {
+                foreach (OnePage::$twigExtensions as $key => $extension) {
+                    if ($extension['class'] === $class) {
+                        return $extension['callback']();
+                    }
+                }
+            }
+        });
+        foreach (OnePage::$twigExtensions as $extension) {
+            OnePage::$twig->addExtension($extension['extension']);
         }
-        OnePage::$rendered = true;
+        OnePage::$templateString = $name;
+        OnePage::$variables      = $variables;
+        
+            $output = OnePage::$twig->render(OnePage::$templateString, OnePage::$variables);
+            if (!OnePage::$fullMode) {
+                header('Content-Type: application/json');
+                $output = json_encode([
+                    "title"   => OnePage::$variables["title"],
+                    "content" => $output,
+                    'scripts' => join(";", OnePage::$scripts),
+                ]);
+            }
+        
+            OnePage::$rendered = true;
+            return $output;
+
     }
 
     public static function autoRender(string $path)
@@ -117,12 +140,17 @@ class OnePage
         if (OnePage::$rendered) {
             return false;
         }
-        OnePage::render($path);
+        echo OnePage::render($path);
     }
 
-    public function renderString(string $string, array $array = null, bool $echo = true)
+    public function renderString(string $string, array $variables = null)
     {
-        OnePage::render($string, $array, $echo, true);
+        return OnePage::render($string, $variables, true);
+    }
+
+    public function renderToFile(string $name, array $variables = null, string $output,bool $is_string = false){
+        $content = OnePage::render($name,$variables,$is_string);
+        file_put_contents($output, $content);
     }
 
     public static function addVariable(string $name, $value)
@@ -130,7 +158,12 @@ class OnePage
         OnePage::$variables[$name] = $value;
     }
 
-    public function addScript(string $script, bool $is_a_file = false)
+    public static function setVariables(array $vars)
+    {
+        OnePage::$variables = $vars;
+    }
+
+    public static function addScript(string $script, bool $is_a_file = false)
     {
         if ($is_a_file) {
             $path = OnePage::$root_dir . "/${script}";
@@ -147,7 +180,7 @@ class OnePage
 
     }
 
-    public static function loadJSON(string $path, bool $convert_to_array = false)
+    public static function loadJSON(string $path, bool $convert_to_array = true)
     {
         $string = file_get_contents($path);
         $json   = json_decode($string, $convert_to_array);
@@ -155,9 +188,13 @@ class OnePage
     }
 
     public static function getTemplatesPath()
-    {return OnePage::$config["paths"]["templates"];}
-    public static function getPhpPath()
-    {return OnePage::$phpPath;}
+    {return OnePage::$config["paths"]["views"];}
+    public static function getTemplatesExtension()
+    {return OnePage::$config["templates_extension"];}
+    public static function getControllersPath()
+    {return OnePage::$config["paths"]["controllers"];}
+    public static function getControllerPath()
+    {return OnePage::$controllerPath;}
     public static function getTemplate()
     {return OnePage::$templateFile;}
     public static function getUrl()

@@ -1,6 +1,10 @@
 # OnePagePHP
 
-Description: Micro-Framework for fast creation of single page apps or webs with PHP
+A Micro-Framework for fast creation of single page apps(SPA) or webs with PHP
+
+**Warning**: this is totally experimental for the moment, it was not tested in a real working environment, some syntax can change from a day to another and probably there is a lot of bugs, use it under your risk.
+
+**I need help with development/documentation/testing/english so if someone is interested please send me a message.**
 
 Source: [https://github.com/marianocarrazana/OnePagePHP](https://github.com/marianocarrazana/OnePagePHP)
 
@@ -11,7 +15,7 @@ Features:
 * Single page navigation: load every page of the same domain/url inside a content element with history support
 * Twig templates support
 * Server Side Rendering
-* Very lightweight and fast for the client and server: the js script's weight is only 3kB (no gzipped) and the php 10kB
+* Very lightweight and fast for the client and server: the js script's weight is only 3kB (no gzipped) and the php 11kB
 * Auto-render templates: you actually don't need to know how to program in php at all, you can add your twig templates inside "views" folder and it will render when the url match the name of the file(without the extension)
 * Auto load controllers and templates: of course if you know php it will better, just add your controller in "controllers" folder and it will render the template with the same name of the controller automatically, if you prefer render manually another template you can do it too
 * Custom routes: you can create custom routes programmatically for APIs similar to laravel or express
@@ -48,11 +52,11 @@ Run on your pc/server:
 
 Open the config.json file and adapt the content for your site.
 
-`paths.templates`: is the folder where you put your html templates
+`paths.views`: is the folder where you put your html templates.
 
-`paths.php`: is the folder where you put your php logic
+`paths.controllers`: is the folder where you put your php logic.
 
-`paths.sections`: is the folder where are templates that can be loaded from anothers templates
+`paths.sections`: is the folder where are templates that can be loaded from others templates.
 
 `default_title`: the title that will be displayed if there is not a title defined. You can define a title inside your controller with `OnePage::addVariable("title","my title")`.
 
@@ -63,6 +67,8 @@ Open the config.json file and adapt the content for your site.
 `automatic_render`: (true or false) if it will search files inside the controllers/templates and automatically render it.
 
 `root_dir`: the full path of your project in your file system, this will used to solve the all paths defined in the paths.php/templates/sections.
+
+`templates_extension`: the file extension of your templates, generally "html" or "twig".
 
 **Create a simple page**
 
@@ -80,11 +86,13 @@ This will render in "Hello world! My name is" without the  {{name}} part, that i
 
 Create a `mypage.php` inside the `src/controllers` folder with this content:
 
-    OnePage::addVariable("name","Maria");
+    $OnePage->addVariable("name","Maria");
 
 Reload [`mysite.com/mypage`](https://mysite.com/mypage) and we will see "Hello world! My name is Maria".
 
-`$this` is a instance of `OnePage` class.
+`$OnePage` is a instance of `OnePagePHP\OnePage` class generate automatically.
+
+You can access to variables from the url with `$variables` array.
 
 **Add a link in your navigation menu with SPA support**
 
@@ -103,14 +111,13 @@ Reload the page and try to click in all the links and you will see how the conte
 This is just a example, the url and the variables support regular expressions.
 
     use OnePagePHP\Router;
-    Router::addRoute("say/#something#", function ($vars) {
+    Router::addRoute("say/{something}", function ($vars) {
         OnePage::renderString("{{something}}", $vars);
     }, ["GET", "POST"]); //this will render on "say/hello" URL the text "hello"
 
 `$onepage` is the object created with the class OnePage
 
-`#something#` is a variable name(is similar to {var} in others routers systems), you  can get the content with `$vars['something']`
+`{something}` is a variable name, you  can get the content with `$vars['something']`
 
-A route more complex can be `"(sum|add)/#num1|number#/#num2|\d+#"` where `(sum|add)` are regexp and `num1` and `num2` variables are numbers(`number` can be a regular expression too like `\d+`).
+A route more complex can be `"(sum|add)/{num1|number}/{num2|\d+}"` where `(sum|add)` are regexp and `num1` and `num2` variables are numbers(`number` can be a regular expresion too like `\d+`).
 
-**I need help with development/documentation/testing/english so if someone is interested please send me a message.**

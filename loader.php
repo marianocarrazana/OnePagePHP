@@ -7,7 +7,7 @@ use OnePagePHP\OnePage;
 use OnePagePHP\Router;
 
 //load the config.json and save it inside the $config variable
-$config = OnePage::loadJSON("config.json", true);
+$config = OnePage::loadJSON("config.json");
 $config["root_dir"] = __dir__;
 //Initialize the class OnePage with the config
 OnePage::init($config);
