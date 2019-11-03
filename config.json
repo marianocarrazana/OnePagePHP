@@ -8,6 +8,7 @@
     "site_url": "//localhost/OnePagePHP",
     "eval_scripts": true,
     "automatic_render": true,
+    "enable_router": true,
     "root_dir": "/full/dir/of/your/project",
     "templates_extension": "html"
 }

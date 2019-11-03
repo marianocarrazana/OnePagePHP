@@ -1,18 +1,28 @@
 <?php
 namespace OnePagePHP;
 
+require_once __dir__ . "/sandbox.php";
+
 /**
  *
  */
 class Router
 {
-    protected static $routes = [];
+    protected $routes = [];
+    protected $url    = "";
+    protected $OnePage = null;
 
-    public static function addRoute(string $route, $function_controller, array $methods = [])
+    public function __construct(OnePage &$OnePage)
     {
-        $regexp = str_replace("/", '\/', $route);
+        $this->url = $OnePage->getUrl();
+        $this->OnePage = $OnePage;
+    }
+
+    public function addRoute(string $route, $function_controller, array $methods = [])
+    {
+        $regexp     = str_replace("/", '\/', $route);
         $with_names = preg_replace("/{([^\/|]+)(|[^\/]*)?}/", '(?<\1>[^\/]+)', $regexp);
-        $regexp = "/^" . $with_names . "$/";
+        $regexp     = "/^" . $with_names . "$/";
         preg_match_all('/{([^\/]+)}/', $route, $vars);
         $vars = $vars[1];
         foreach ($vars as $key => $value) {
@@ -35,28 +45,22 @@ class Router
             $regexpVar  = "/^{$regexpVar}$/i";
             $vars[$key] = ["name" => $name, "regexp" => $regexpVar];
         }
-        Router::$routes[] = ["variables" => $vars,
-            "route"                          => $route,
-            "controller"                     => $function_controller,
-            "methods"                        => $methods, "regexp" => $regexp];
+        $this->routes[] = ["variables" => $vars,
+            "route"                        => $route,
+            "controller"                   => $function_controller,
+            "methods"                      => $methods, "regexp" => $regexp];
     }
 
-    protected static function runInSandbox(string $path,array $variables=[])
-    {
-        $OnePage = new OnePage;
-        require_once $path;
-    }
-
-    public static function checkRoutes()
+    public function checkRoutes()
     {
         $noRoute = true;
-        foreach (Router::$routes as $route) {
+        foreach ($this->routes as $route) {
             //check if the route exist
-            if (preg_match($route["regexp"], OnePage::getUrl()) && $noRoute) {
+            if (preg_match($route["regexp"], $this->url) && $noRoute) {
                 if (!empty($route["methods"]) && !in_array($_SERVER['REQUEST_METHOD'], $route["methods"])) {
                     http_response_code(405);die(); //metho not implemented in router
                 }
-                preg_match_all($route["regexp"], OnePage::getUrl(), $matches);
+                preg_match_all($route["regexp"], $this->url, $matches);
                 $variables = $route["variables"];
                 $vars      = [];
                 foreach ($variables as $variable) {
@@ -70,24 +74,26 @@ class Router
                 if (is_callable($route["controller"])) {
                     call_user_func($route["controller"], $vars);
                 } else {
-                    if (file_exists(OnePage::getControllersPath() . "${route['controller']}.php")) {
-                        Router::runInSandbox(OnePage::getControllersPath() . "${route['controller']}.php",$vars);
+                    if (file_exists($this->OnePage->getControllersPath() . "${route['controller']}.php")) {
+                        new Sandbox(
+                            $this->OnePage->getControllersPath() . "${route['controller']}.php", 
+                            $vars, $this->OnePage);
                     }
-                    if (file_exists(OnePage::getTemplatesPath() . "${route['controller']}." . OnePage::getTemplatesExtension())) {
-                        OnePage::autoRender("${route['controller']}." . OnePage::getTemplatesExtension());
+                    if (file_exists($this->OnePage->getTemplatesPath() . "${route['controller']}." . $this->OnePage->getTemplatesExtension())) {
+                        $this->OnePage->autoRender("${route['controller']}." . $this->OnePage->getTemplatesExtension());
                     }
                 }
             }
         }
         if ($noRoute) {
             $noFiles = true;
-            if (OnePage::getAutomaticRender()) {
-                if (file_exists(OnePage::getControllerPath())) {
-                    Router::runInSandbox(OnePage::getControllerPath());
+            if ($this->OnePage->getAutomaticRender()) {
+                if (file_exists($this->OnePage->getControllerPath())) {
+                    new Sandbox($this->OnePage->getControllerPath(), [], $this->OnePage);
                     $noFiles = false;
                 }
-                if (file_exists(OnePage::getTemplatesPath() . OnePage::getTemplate())) {
-                    OnePage::autoRender(OnePage::getTemplate());
+                if (file_exists($this->OnePage->getTemplatesPath() . $this->OnePage->getTemplate())) {
+                    $this->OnePage->autoRender($this->OnePage->getTemplate());
                     $noFiles = false;
                 }
             }
