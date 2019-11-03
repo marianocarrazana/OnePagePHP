@@ -6,7 +6,7 @@ A Micro-Framework for fast creation of single page apps(SPA) or webs with PHP.
 
 **I need help with development/documentation/testing/english so if someone is interested please send me a message.**
 
-**[Support me on Patron](https://www.patreon.com/marianofromlaruta)**
+**[Support me on Patreon](https://www.patreon.com/marianofromlaruta)**
 
 Features:
 
