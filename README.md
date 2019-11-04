@@ -13,7 +13,7 @@ Features:
 * Single page navigation: load every page of the same domain/url inside a content element with history support
 * Twig templates support
 * Server Side Rendering
-* Very lightweight and fast for the client and server: the js script's weight is only 3kB (no gzipped) and the php 11kB
+* Very lightweight and fast for the client and server: the js script's weight is only 3kB (no gzipped) and the php 12kB
 * Auto-render templates: you actually don't need to know how to program in php at all, you can add your twig templates inside "views" folder and it will render when the url match the name of the file(without the extension)
 * Auto load controllers and templates: of course if you know php it will better, just add your controller in "controllers" folder and it will render the template with the same name of the controller automatically, if you prefer render manually another template you can do it too
 * Custom routes: you can create custom routes programmatically for APIs similar to laravel or express
@@ -25,7 +25,7 @@ Future Features:
 * GraphQL similar system for consult/manipulate data
 * Multiple template engines support
 * PHP 5 support(sorry, I think is only compatible with php 7 for now, I dont tested it yet in php 5)
-* Shared variables between PHP and JS(actually you can share variables with OnePage::addScripts('var myvar=1') but is unsafe)
+* Shared variables between PHP and JS(actually you can share variables with OnePage::addScript("var jsVar={$phpVar}"))
 * Content preloader
 * Full site compiler to HTML/JS/CSS
 
@@ -94,11 +94,11 @@ This will render in "Hello world! My name is" without the  {{name}} part, that i
 
 Create a `mypage.php` inside the `src/controllers` folder with this content:
 
-    $OnePage->addVariable("name","Maria");
+    $renderer->addVariable("name","Maria");
 
 Reload [`mysite.com/mypage`](https://mysite.com/mypage) and we will see "Hello world! My name is Maria".
 
-`$OnePage` is a instance of `OnePagePHP\OnePage` class generated automatically.
+`$renderer` is a instance of `OnePagePHP\Renderer` class generated automatically.
 
 You can access to variables from the url with `$variables` array.
 
@@ -118,11 +118,12 @@ Reload the page and try to click in all the links and you will see how the conte
 
 This is just a example, the url and the variables support regular expressions.
 
-    Router::addRoute("say/{something}", function ($vars) {
-        OnePage::renderString("{{something}}", $vars);
+    $router->addRoute("say/{something}", function ($vars) {
+        global $renderer;
+        $renderer->renderString("{{something}}", $vars);
     }, ["GET", "POST"]); //this will render on "say/hello" URL the text "hello"
 
-`$onepage` is the object created with the class OnePage
+`$renderer` is a global variable created(automatically, like $router) with the instance of the class OnePage
 
 `{something}` is a variable name, you  can get the content with `$vars['something']`
 

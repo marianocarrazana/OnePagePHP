@@ -10,7 +10,7 @@ $config["root_dir"] = __dir__;
 //Initialize the class OnePage with the config
 $OnePage = new OnePage($config);
 
-$router = $OnePage->router;
+//$router is declared globally in OnePage construct
 //load the routes, you can edit the file routes.php
 require_once "routes.php";
 

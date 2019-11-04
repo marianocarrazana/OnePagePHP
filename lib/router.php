@@ -4,17 +4,19 @@ namespace OnePagePHP;
 require_once __dir__ . "/sandbox.php";
 
 /**
- *
+ * 
  */
 class Router
 {
     protected $routes = [];
     protected $url    = "";
     protected $OnePage = null;
+    protected $paths = [];
 
     public function __construct(OnePage &$OnePage)
     {
         $this->url = $OnePage->getUrl();
+        $this->paths = $OnePage->getConfig("paths");
         $this->OnePage = $OnePage;
     }
 
@@ -74,26 +76,26 @@ class Router
                 if (is_callable($route["controller"])) {
                     call_user_func($route["controller"], $vars);
                 } else {
-                    if (file_exists($this->OnePage->getControllersPath() . "${route['controller']}.php")) {
+                    if (file_exists($this->paths["controllers"] . "${route['controller']}.php")) {
                         new Sandbox(
-                            $this->OnePage->getControllersPath() . "${route['controller']}.php", 
+                            $this->paths["controllers"] . "${route['controller']}.php", 
                             $vars, $this->OnePage);
                     }
-                    if (file_exists($this->OnePage->getTemplatesPath() . "${route['controller']}." . $this->OnePage->getTemplatesExtension())) {
-                        $this->OnePage->autoRender("${route['controller']}." . $this->OnePage->getTemplatesExtension());
+                    if (file_exists($this->paths["views"] . "${route['controller']}." . $this->OnePage->getTemplatesExtension())) {
+                        $this->OnePage->getRenderer()->autoRender("${route['controller']}." . $this->OnePage->getTemplatesExtension());
                     }
                 }
             }
         }
         if ($noRoute) {
             $noFiles = true;
-            if ($this->OnePage->getAutomaticRender()) {
+            if ($this->OnePage->getConfig("automatic_render")) {
                 if (file_exists($this->OnePage->getControllerPath())) {
                     new Sandbox($this->OnePage->getControllerPath(), [], $this->OnePage);
                     $noFiles = false;
                 }
-                if (file_exists($this->OnePage->getTemplatesPath() . $this->OnePage->getTemplate())) {
-                    $this->OnePage->autoRender($this->OnePage->getTemplate());
+                if (file_exists($this->paths["views"] . $this->OnePage->getTemplate())) {
+                    $this->OnePage->getRenderer()->autoRender($this->OnePage->getTemplate());
                     $noFiles = false;
                 }
             }
