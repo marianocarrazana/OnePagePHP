@@ -33,6 +33,7 @@ class Renderer
         array $variables = null,
         bool $is_string = false
     ) {
+        $errors = join("",ErrorHandler::$list);
         if (!$is_string) {
             /*file render*/
             $path = $this->paths["views"] . $name;
@@ -53,7 +54,7 @@ class Renderer
             $onepagejs    = file_get_contents(__dir__ . "/onepage.js"); //include onepagejs in library mode too
             $eval_scripts = $this->OnePage->getConfig('eval_scripts');
             $template .= "<script type='text/javascript'>{$onepagejs};OnePage.site_url='{{site_url}}';OnePage.updateRoutes();OnePage.eval_scripts={$eval_scripts};" . join(";", $this->scripts) . "</script>";
-            $template = "{% extends 'base." . $this->OnePage->getConfig('templates_extension') . "' %}{% block content %}{$template}{% endblock %}";
+            $template = "{% extends 'base." . $this->OnePage->getConfig('templates_extension') . "' %}{% block content %}{$errors}{$template}{% endblock %}";
         }
         $variables['site_url']      = $this->OnePage->getConfig('site_url');
         $this->sectionsFiles[$name] = $template;
@@ -91,6 +92,7 @@ class Renderer
                 "title"   => $this->variables["title"],
                 "content" => $output,
                 'scripts' => join(";", $this->scripts),
+                "errors" => $errors
             ]);
         }
 

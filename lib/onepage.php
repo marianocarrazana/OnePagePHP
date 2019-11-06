@@ -3,6 +3,7 @@ namespace OnePagePHP;
 
 require_once __dir__ . '/router.php';
 require_once __dir__ . '/renderer.php';
+require_once __dir__ . '/errorhandler.php';
 
 /**
  *
@@ -19,18 +20,29 @@ class OnePage
     protected $router           = null;
     protected $renderer = null;
 
-    public function __construct(array $config)
+    public function __construct(array $config = [])
     {
+        new ErrorHandler();
+        $errors = &ErrorHandler::$list;
+        $headers = getallheaders();
+        if(isset($headers["X-OnePagePHP"])){
+            $x_onepagephp = json_decode($headers["X-OnePagePHP"],true);
+            $this->fullMode         = $x_onepagephp["fullMode"];
+        }else{
+            $this->fullMode = true;
+        }
         $this->config           = $config;
-        $this->fullMode         = !isset($_GET["onepage"]);
         if (preg_match('/[^\/]$/', $this->config['site_url'])) {
             $this->config['site_url'] .= '/';
         }
-        if (!isset($_GET["_url"])) {
+        if (!isset($_SERVER["REQUEST_URI"])) {
             trigger_error("No URL", E_USER_ERROR);
         }
+        $relativePath = preg_replace('/\/\/[^\/]+(\/.+)/', '\1', $this->config['site_url']);
+        $relativePath = "/^" .str_replace('/', '\/', $relativePath) ."/";
+        $requestURI = preg_replace($relativePath, "", urldecode($_SERVER["REQUEST_URI"]));
         //no url,avoid open loader.php directly
-        $paths     = explode("?", $_GET["_url"]); //separate url from parameters
+        $paths     = explode("?", $requestURI); //separate url from parameters
         $this->url = $paths[0];
         $paths     = explode("/", $paths[0]);
         foreach ($paths as $key => $value) {
@@ -56,7 +68,7 @@ class OnePage
         $GLOBALS['renderer'] = $this->renderer;
     }
 
-    protected function checkConfig(array $config = [])
+    protected function checkConfig(array &$config)
     {
 
     }

@@ -24,10 +24,14 @@ Future Features:
 * Reactivity(for the moment you can add the Angular/React/Vuejs runtime, without the routers and compiler, or similar to achieve this feature)
 * GraphQL similar system for consult/manipulate data
 * Multiple template engines support
-* PHP 5 support(sorry, I think is only compatible with php 7 for now, I dont tested it yet in php 5)
+* PHP 5 support(sorry, is only compatible with php 7 for now)
 * Shared variables between PHP and JS(actually you can share variables with OnePage::addScript("var jsVar={$phpVar}"))
-* Content preloader
+* Content preloader and lazy load
+* Custom UI controls
 * Full site compiler to HTML/JS/CSS
+* Session manager
+* Multi-elements renderer
+* NodeJS and Python flavours
 
 Why use OnePagePHP and not another JS/PHP framework?
 
