@@ -13,10 +13,12 @@ Features:
 * Single page navigation: load every page of the same domain/url inside a content element with history support
 * Twig templates support
 * Server Side Rendering
-* Very lightweight and fast for the client and server: the js script's weight is only 3kB (no gzipped) and the php 12kB
+* Very lightweight and fast for the client and server: the js script's weight is only 3kB (no gzipped) and the php 18kB
 * Auto-render templates: you actually don't need to know how to program in php at all, you can add your twig templates inside "views" folder and it will render when the url match the name of the file(without the extension)
 * Auto load controllers and templates: of course if you know php it will better, just add your controller in "controllers" folder and it will render the template with the same name of the controller automatically, if you prefer render manually another template you can do it too
 * Custom routes: you can create custom routes programmatically for APIs similar to laravel or express
+* Render to file
+* Errors handler
 * FREE(MIT license)
 
 Future Features:
