@@ -125,14 +125,13 @@ Reload the page and try to click in all the links and you will see how the conte
 
 This is just a example, the url and the variables support regular expressions.
 
-    $router->addRoute("say/{something}", function ($vars) {
-        global $renderer;
-        $renderer->renderString("{{something}}", $vars);
+    $router->addRoute("say/{something}", function ($params) use($renderer) {
+        $renderer->renderString("{{something}}", $params);
     }, ["GET", "POST"]); //this will render on "say/hello" URL the text "hello"
 
 `$renderer` is a global variable created(automatically, like $router) with the instance of the class OnePage
 
-`{something}` is a variable name, you  can get the content with `$vars['something']`
+`{something}` is a parameter name, you  can get the content with `$params['something']`
 
 A route more complex can be `"(sum|add)/{num1|number}/{num2|\d+}"` where `(sum|add)` are regexp and `num1` and `num2` variables are numbers(`number` can be a regular expression too like `\d+`).
 
