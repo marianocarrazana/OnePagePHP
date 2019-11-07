@@ -18,7 +18,7 @@ Features:
 * Auto load controllers and templates: of course if you know php it will better, just add your controller in "controllers" folder and it will render the template with the same name of the controller automatically, if you prefer render manually another template you can do it too
 * Custom routes: you can create custom routes programmatically for APIs similar to laravel or express
 * Render to file
-* Errors handler
+* Error handler
 * FREE(MIT license)
 
 Future Features:
@@ -34,6 +34,7 @@ Future Features:
 * Session manager
 * Multi-elements renderer
 * NodeJS and Python flavours
+* A free CMS based on the library
 
 Why use OnePagePHP and not another JS/PHP framework?
 

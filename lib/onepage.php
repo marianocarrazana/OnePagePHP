@@ -46,9 +46,7 @@ class OnePage
         $this->url = $paths[0];
         $paths     = explode("/", $paths[0]);
         foreach ($paths as $key => $value) {
-            if (preg_match('/[^\w\-\_\ ]/', $value)) {
-                trigger_error("Invalid URL, remove all non alphanumeric charracters", E_USER_ERROR);
-            } else if ($value == '') {
+            if ($value == '') {
                 $paths[$key] = "index";
             }
         }

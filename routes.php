@@ -9,15 +9,13 @@ $router->addRoute("custom/route", function () {
     echo $renderer->renderString("Custom route");
 });
 
-//#something# is a variable name(is similar ro {var} in others routers systems), you  can get the content with $vars['something']
-$router->addRoute("say/{something}", function ($vars) {
-	global $renderer;
-    echo $renderer->renderString("{{something}}", $vars);
+//#something# is a variable name(is similar ro {var} in others routers systems), you  can get the content with $params['something']
+$router->addRoute("say/{something}", function ($params) use ($renderer) {
+    echo $renderer->renderString("{{something}}", $params);
 }, ["GET", "POST"]); //allow GET and POST methods
 
 //the routes support regular expresions (sum|add) will match sum or add, also 'number' word on the right of a variable name(and a |) it will match only numbers
-$router->addRoute("(sum|add)/{num1|number}/{num2|number}", function ($vars) {
-	global $renderer;
-    $vars["total"] = $vars["num1"] + $vars["num2"];
-    echo $renderer->renderString("{{num1}}+{{num2}}={{total}}", $vars);
+$router->addRoute("(sum|add)/{num1|number}/{num2|number}", function ($params) use ($renderer) {
+    $params["total"] = $params["num1"] + $params["num2"];
+    echo $renderer->renderString("{{num1}}+{{num2}}={{total}}", $params);
 }, ["GET"]); //allow only GET method
