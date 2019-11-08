@@ -44,16 +44,24 @@ class OnePage
         //no url,avoid open loader.php directly
         $paths     = explode("?", $requestURI); //separate url from parameters
         $this->url = $paths[0];
-        $paths     = explode("/", $paths[0]);
-        foreach ($paths as $key => $value) {
-            if ($value == '') {
-                $paths[$key] = "index";
+        if($this->url=="/")$path = "index";
+        else{
+            $paths     = explode("/", $paths[0]);
+            foreach ($paths as $key => $value) {
+                if ($value == '') {
+                    $paths[$key] = "index";
+                }
             }
+            $path           = join("/", $paths);
         }
-        $path           = join("/", $paths);
         foreach ($this->config["paths"] as $key => $value) {
             /* set absolute paths */
             $this->config["paths"][$key] = $this->config["root_dir"] . "/{$value}/";
+        }
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            foreach ($this->config["paths"] as $key => $value) {
+                $this->config["paths"][$key] = preg_replace("/\//", "\\", $value);
+            }
         }
         $this->controllerPath = $this->config["paths"]["controllers"] . "{$path}.php";
         $this->templateFile   = "{$path}.{$config['templates_extension']}";
