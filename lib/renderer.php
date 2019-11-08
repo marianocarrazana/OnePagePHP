@@ -23,7 +23,8 @@ class Renderer
         $sections             = scandir($this->paths["sections"]);
         foreach ($sections as $i) {
             if (preg_match('/[^\.]/', $i)) {
-                $this->sectionsFiles[$i] = file_get_contents("/{$this->paths['sections']}/" . $i);
+                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') $this->sectionsFiles[$i] = file_get_contents("{$this->paths['sections']}\\" . $i);
+                else $this->sectionsFiles[$i] = file_get_contents("/{$this->paths['sections']}/" . $i);
             }
         }
     }
