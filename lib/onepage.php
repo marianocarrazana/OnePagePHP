@@ -38,7 +38,7 @@ class OnePage
         if (!isset($_SERVER["REQUEST_URI"])) {
             trigger_error("No URL", E_USER_ERROR);
         }
-        $relativePath = preg_replace('/\/\/[^\/]+(\/.+)/', '\1', $this->config['site_url']);
+        $relativePath = preg_replace('/\/\/[^\/]+(\/.*)/', '\1', $this->config['site_url']);
         $relativePath = "/^" .str_replace('/', '\/', $relativePath) ."/";
         $requestURI = preg_replace($relativePath, "", urldecode($_SERVER["REQUEST_URI"]));
         //no url,avoid open loader.php directly
