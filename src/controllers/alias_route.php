@@ -1,6 +1,5 @@
 <?php
 //$params['string']: it content the parameter defined in the url alias_url/{string}
-var_dump($params);
 if (empty($params["string"])) {
     $params["string"] = "where is the string?";
 }
