@@ -7,16 +7,17 @@ namespace OnePagePHP;
 class Renderer
 {
 
-    protected $OnePage = null;
-    protected $variables        = []; //variables for twig templates
-    protected $scripts          = []; //scripts to execute on page load
-    protected $rendered         = false;
-    protected $paths = [];
-    protected static $twigExtensions   = [];
-    protected $twig             = null;
-    protected $sectionsFiles    = [];
+    private $OnePage = null;
+    private $variables        = []; //variables for twig templates
+    private $scripts          = []; //scripts to execute on page load
+    private $rendered         = false;
+    private $paths = [];
+    private static $twigExtensions   = [];
+    private $twig             = null;
+    private $sectionsFiles    = [];
+    private $config = [];
 
-    public function __construct(OnePage &$OnePage)
+    public function __construct(Loader &$OnePage)
     {
         $this->OnePage = $OnePage;
         $this->paths = $OnePage->getConfig("paths");
@@ -27,6 +28,7 @@ class Renderer
                 else $this->sectionsFiles[$i] = file_get_contents("/{$this->paths['sections']}/" . $i);
             }
         }
+        $this->config = $OnePage->getConfig("renderer");
     }
 
     public function render(
@@ -34,7 +36,15 @@ class Renderer
         array $variables = null,
         bool $is_string = false
     ) {
-        $errors = join("",ErrorHandler::$list);
+        $errors = "";
+        $log = "";
+        $error_handler = $this->OnePage->getConfig("error_handler");
+        if($error_handler["debug_mode"])
+            {        
+                $logger = $this->OnePage->getLogger();
+                $errors = join("<br>",$logger->getHtmlErrors());
+                $log = join(";",$logger->getConsoleLog());
+            }
         if (!$is_string) {
             /*file render*/
             $path = $this->paths["views"] . $name;
@@ -55,7 +65,7 @@ class Renderer
             $onepagejs    = file_get_contents(__dir__ . "/onepage.js"); //include onepagejs in library mode too
             $eval_scripts = $this->OnePage->getConfig('eval_scripts');
             $template .= "<script type='text/javascript'>{$onepagejs};OnePage.site_url='{{site_url}}';OnePage.updateRoutes();OnePage.eval_scripts={$eval_scripts};" . join(";", $this->scripts) . "</script>";
-            $template = "{% extends 'base." . $this->OnePage->getConfig('templates_extension') . "' %}{% block content %}{$errors}{$template}{% endblock %}";
+            $template = "{% extends 'base." . $this->OnePage->getConfig('templates_extension') . "' %}{% block content %}{$errors}<script>{$log}</script>{$template}{% endblock %}";
         }
         $variables['site_url']      = $this->OnePage->getConfig('site_url');
         $this->sectionsFiles[$name] = $template;
@@ -93,7 +103,8 @@ class Renderer
                 "title"   => $this->variables["title"],
                 "content" => $output,
                 'scripts' => join(";", $this->scripts),
-                "errors" => $errors
+                "errors" => $errors,
+                "console" => $log
             ]);
         }
 

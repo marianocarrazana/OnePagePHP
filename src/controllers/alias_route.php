@@ -1,4 +1,5 @@
 <?php
+global $renderer;
 //$params['string']: it content the parameter defined in the url alias_url/{string}
 if (empty($params["string"])) {
     $params["string"] = "where is the string?";

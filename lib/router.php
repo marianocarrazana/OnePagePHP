@@ -4,20 +4,22 @@ namespace OnePagePHP;
 require_once __dir__ . "/sandbox.php";
 
 /**
- * 
+ *
  */
 class Router
 {
-    protected $routes = [];
-    protected $url    = "";
-    protected $OnePage = null;
-    protected $paths = [];
+    private $routes  = [];
+    private $url     = "";
+    private $OnePage = null;
+    private $paths   = [];
+    private $config  = [];
 
-    public function __construct(OnePage &$OnePage)
+    public function __construct(Loader &$OnePage)
     {
-        $this->url = $OnePage->getUrl();
-        $this->paths = $OnePage->getConfig("paths");
+        $this->url     = $OnePage->getUrl();
+        $this->paths   = $OnePage->getConfig("paths");
         $this->OnePage = $OnePage;
+        $this->config  = $OnePage->getConfig("router");
     }
 
     public function addRoute(string $route, $function_controller, array $methods = [])
@@ -55,7 +57,8 @@ class Router
 
     public function checkRoutes()
     {
-        $noRoute = true;
+        $noRoute   = true;
+        $debugMode = $this->OnePage->getConfig("error_handler")["debug_mode"];
         foreach ($this->routes as $route) {
             //check if the route exist
             if (preg_match($route["regexp"], $this->url) && $noRoute) {
@@ -72,35 +75,50 @@ class Router
                     }
                     $vars[$variable['name']] = $value;
                 }
+
                 $noRoute = false;
                 if (is_callable($route["controller"])) {
                     call_user_func($route["controller"], $vars);
                 } else {
-                    if (file_exists($this->paths["controllers"] . "${route['controller']}.php")) {
+                    $controller = $this->paths["controllers"] . "${route['controller']}.php";
+                    if (file_exists($controller)) {
                         new Sandbox(
-                            $this->paths["controllers"] . "${route['controller']}.php", 
-                            $vars, $this->OnePage);
+                            $this->paths["controllers"] . "${route['controller']}.php",$vars);
+                    } else if ($debugMode) {
+                        trigger_error("${controller} controller doesn't exist", 1024);
                     }
-                    if (file_exists($this->paths["views"] . "${route['controller']}." . $this->OnePage->getTemplatesExtension())) {
-                        $this->OnePage->getRenderer()->autoRender("${route['controller']}." . $this->OnePage->getTemplatesExtension());
+                    $view = $this->paths["views"] . "${route['controller']}." . $this->OnePage->getConfig('templates_extension');
+                    if (file_exists($view)) {
+                        $this->OnePage->getRenderer()->autoRender("${route['controller']}." . $this->OnePage->getConfig('templates_extension'));
+                    }else if($debugMode){
+                        trigger_error("${view} view doesn't exist", 1024);
                     }
                 }
             }
         }
+
         if ($noRoute) {
-            $noFiles = true;
-            if ($this->OnePage->getConfig("automatic_render")) {
-                if (file_exists($this->OnePage->getControllerPath())) {
-                    new Sandbox($this->OnePage->getControllerPath(), [], $this->OnePage);
+            $noFiles = true;              
+            if ($this->config["auto_render"]) {
+                $controller = $this->OnePage->getControllerPath();
+                if (file_exists($controller)) {
+                    new Sandbox($controller, []);
                     $noFiles = false;
+                }else if($debugMode){
+                    trigger_error("${controller} view doesn't exist", 1024);
                 }
-                if (file_exists($this->paths["views"] . $this->OnePage->getTemplate())) {
+                $view = $this->paths["views"] . $this->OnePage->getTemplate();
+                if (file_exists($view)) {
                     $this->OnePage->getRenderer()->autoRender($this->OnePage->getTemplate());
                     $noFiles = false;
+                }else if($debugMode){
+                    trigger_error("${view} view doesn't exist", 1024);
                 }
             }
             if ($noFiles) {
-                http_response_code(404);die();
+                http_response_code(404);
+                if($debugMode)trigger_error("No files or route found",E_USER_ERROR);
+                die();
             }
         }
     }

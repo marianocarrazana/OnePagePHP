@@ -5,9 +5,8 @@ namespace OnePagePHP;
  */
 class Sandbox 
 {
-	function __construct(string $path,array $params=[],OnePage &$OnePage)
+	function __construct(string $path,array $params=[])
 	{
-		$renderer = $OnePage->getRenderer();
 		require_once $path;
 	}
 }

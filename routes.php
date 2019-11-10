@@ -19,3 +19,8 @@ $router->addRoute("(sum|add)/{num1|number}/{num2|number}", function ($params) us
     $params["total"] = $params["num1"] + $params["num2"];
     echo $renderer->renderString("{{num1}}+{{num2}}={{total}}", $params);
 }, ["GET"]); //allow only GET method
+$router->addRoute("errors", function () use ($renderer) {
+	trigger_error("Oh no! is a notice",E_USER_NOTICE);
+	trigger_error("Oh no! is a warning",E_USER_WARNING);
+    echo $renderer->renderString("Open the console!");
+});

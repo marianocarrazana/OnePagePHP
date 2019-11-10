@@ -101,11 +101,13 @@ This will render in "Hello world! My name is" without the  {{name}} part, that i
 
 Create a `mypage.php` inside the `src/controllers` folder with this content:
 
+    <?php
+    global $renderer;
     $renderer->addVariable("name","Maria");
 
 Reload [`mysite.com/mypage`](https://mysite.com/mypage) and we will see "Hello world! My name is Maria".
 
-`$renderer` is a instance of `OnePagePHP\Renderer` class generated automatically.
+`$renderer` is a instance of `OnePagePHP\Renderer` class generated automatically and saved like a global variable.
 
 You can access to variables from the url with `$variables` array.
 

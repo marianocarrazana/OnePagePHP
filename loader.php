@@ -2,13 +2,13 @@
 require_once 'vendor/autoload.php';
 require_once 'lib/onepage.php';
 
-use OnePagePHP\OnePage;
+use OnePagePHP\Loader;
 
 //load the config.json and save it inside the $config variable
-$config = OnePage::loadJSON("config.json");
+$config = Loader::loadJSON("config.json");
 $config["root_dir"] = __dir__;
-//Initialize the class OnePage with the config
-$app = new OnePage($config);
+//Initialize the class OnePagePHP\Loader with the config
+$app = new Loader($config);
 
 //$router is declared globally in OnePage construct
 //load the routes, you can edit the file routes.php

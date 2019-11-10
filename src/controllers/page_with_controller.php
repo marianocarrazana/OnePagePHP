@@ -1,4 +1,5 @@
 <?php
+global $renderer;
 $result = 1+1;
 //this script is running on sandbox mode you have 2 variables:
 //$renderer: is a instance of OnePagePHP\Renderer class in this case it was defined in loader.php

@@ -1,22 +1,36 @@
 <?php
 namespace OnePagePHP;
+require_once __dir__ . "/interfaces/error_handler.php";
+require_once __dir__ . '/logger.php';
 
 /**
  *
  */
-class ErrorHandler
+class ErrorHandler implements Interfaces\ErrorHandler
 {
 
-    public static $list = array();
+    private $debugMode = false;
+    private $logger = null;
+    private $displayOn = '';
 
-    public function __construct($log = false)
+    public function __construct(Loader &$OnePage)
     {
-        set_error_handler('OnePagePHP\ErrorHandler::err_handler');
-        set_exception_handler('OnePagePHP\ErrorHandler::exc_handler');
-        ini_set('display_errors','Off');//disable default log report
+        set_error_handler([$this, 'err_handler']);
+        set_exception_handler([$this, 'exc_handler']);
+        ini_set('display_errors', 'Off'); //disable default log report
+        $config          = $OnePage->getConfig("error_handler");
+        $this->debugMode = $config["debug_mode"];
+        $this->displayOn = $config["display_on"];
+        $this->logger = new Logger($config["display_on"]);
     }
 
-    public static function err_handler($errno, $errstr, $errfile, $errline, $errcontext)
+
+    public function getLogger()
+    {return $this->logger;}
+    public function getDebugMode()
+    {return $this->debugMode;}
+
+    public function err_handler($errno, $errstr, $errfile, $errline, $errcontext)
     {
         $l = error_reporting();
         if ($l & $errno) {
@@ -26,21 +40,26 @@ class ErrorHandler
                 case E_USER_ERROR:
                     $type = 'Fatal Error';
                     $exit = true;
+                    $method = "error";
                     break;
                 case E_USER_WARNING:
                 case E_WARNING:
                     $type = 'Warning';
+                    $method = "warn";
                     break;
                 case E_USER_NOTICE:
                 case E_NOTICE:
                 case @E_STRICT:
                     $type = 'Notice';
+                    $method = "log";
                     break;
                 case @E_RECOVERABLE_ERROR:
                     $type = 'Catchable';
+                    $method = "log";
                     break;
                 default:
                     $type = 'Unknown Error';
+                    $method = "error";
                     $exit = true;
                     break;
             }
@@ -48,9 +67,10 @@ class ErrorHandler
             $exception = new \ErrorException($type . ': ' . $errstr, 0, $errno, $errfile, $errline);
 
             if ($exit) {
-                ErrorHandler::exc_handler($exception);
+                $this->exc_handler($exception);
             } else {
-                ErrorHandler::$list[] = ErrorHandler::renderException($exception);
+                $this->logger->addHtmlError($exception);
+                $this->logger->addConsoleLog($method,$exception);
             }
 
         }
@@ -61,60 +81,44 @@ class ErrorHandler
     {
         $message = $exception->getMessage();
         $trace   = $exception->getTraceAsString();
-        $log = $exception->getMessage() . "\r\n" . $exception->getTraceAsString() . "\r\n";
+        $log     = $exception->getMessage() . "\r\n" . $exception->getTraceAsString() . "\r\n";
         if (ini_get('log_errors')) {
             error_log($log, 0);
         }
         http_response_code(500);
+        if (!$this->debugMode) {
+            die();
+        }
+        $this->logger->addHtmlError($exception);
+        $this->logger->addConsoleLog("error",$exception);
         $headers = getallheaders();
-        if(isset($headers["X-OnePagePHP"])){
-            $x_onepagephp = json_decode($headers["X-OnePagePHP"],true);
-            $fullMode         = $x_onepagephp["fullMode"];
-        }else{
+        if (isset($headers["X-OnePagePHP"])) {
+            $x_onepagephp = json_decode($headers["X-OnePagePHP"], true);
+            $fullMode     = $x_onepagephp["fullMode"];
+        } else {
             $fullMode = true;
         }
-        if($fullMode){
-            echo ErrorHandler::renderException($exception);
-        }else{
+        $errors = join("<br>", $this->logger->getHtmlErrors());
+        $log = join(";\n", $this->logger->getConsoleLog());
+        if ($fullMode) {
+            if($this->displayOn!=Interfaces\Log::LOG_NONE){
+                echo "<!DOCTYPE html><!-- Error handler --><html><head></head><body>";
+                    echo $errors;
+                    echo "<script>{$log}</script>";
+                echo "</body></html>";
+            }
+        } else {
             header('Content-Type: application/json');
-            echo json_encode(["message"=>$message,"trace"=>$trace]);
+            $output = json_encode([
+                "title"   => "Error :{$message}",
+                "content" => "",
+                'scripts' => "",
+                "errors" => $errors,
+                "console" => $log
+            ]);
+            echo $output;
         }
         die();
-    }
-
-    public static function renderException($exception){
-        $message = $exception->getMessage();
-                    $trace = $exception->getTrace();
-                    $severity = $exception->getSeverity();
-                    if($severity<512)$style = "background:red;color:black";
-                    else if($severity==512)$style = "background:yellow;color:black";
-                    else $style = "background:white;color:black";
-        $out = "<table style='background:black;color:white'>
-            <tr  style='{$style}'><td colspan='3'>{$message}</td></tr>
-            <tr><th>File</th><th>Line</th><th>Function</th></tr>";
-            foreach ($trace as $value) {
-                $out .= "<tr style='font-size:80%'><td>";
-                if(isset($value['file']))$out .= $value['file'];
-                $out .="</td><td>";
-                if(isset($value['line']))$out .= $value['line'];
-                $out .="</td><td>";
-                if(isset($value['function'])){
-                    $out .= $value['function'];
-                    if(isset($value['args'])){
-                        foreach ($value['args'] as $key => $arg) {
-                            $t = gettype($arg);
-                            $value['args'][$key] = $t=="string" || $t=="integer" || 
-                            $t=="boolean" || $t=="double"?(string)$arg:$t;
-                        }
-                    $args = join(",",$value['args']);
-                    $out .= "({$args})";
-                    }
-                }
-                $out .= "</td></tr>";
-            }
-            
-            $out .= "</table>";
-            return $out;
     }
 
 }
