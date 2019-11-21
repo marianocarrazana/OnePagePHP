@@ -116,7 +116,8 @@ class Logger implements Log
         if ($this->displayOn != Log::LOG_CONSOLE && $this->displayOn != Log::LOG_ALL)return 0;
         $message = $this->cleanForConsole($exception->getMessage());
         $trace   = $exception->getTrace();
-        $this->consoleLog[] = "console.groupCollapsed({$message})";
+        $this->consoleLog[] = "console.{$method}({$message})";
+        $this->consoleLog[] = "console.groupCollapsed('View trace')";
         $table = [];
         foreach ($trace as $value) {
             $row = [];

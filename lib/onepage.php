@@ -64,7 +64,7 @@ class Loader
             /* set absolute paths */
             $this->config["paths"][$key] = $this->config["root_dir"] . "/{$value}/";
         }
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        if ($this->isWindows()) {
             foreach ($this->config["paths"] as $key => $value) {
                 $this->config["paths"][$key] = preg_replace("/\//", "\\", $value);
             }
@@ -118,6 +118,10 @@ class Loader
             return false;
         }
         return $json;
+    }
+
+    public static function isWindows(){
+        return '\\' === DIRECTORY_SEPARATOR;
     }
 
     public function getConfig(string $name)

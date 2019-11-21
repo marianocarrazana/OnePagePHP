@@ -7,25 +7,29 @@ namespace OnePagePHP;
 class Renderer
 {
 
-    private $OnePage = null;
-    private $variables        = []; //variables for twig templates
-    private $scripts          = []; //scripts to execute on page load
-    private $rendered         = false;
-    private $paths = [];
-    private static $twigExtensions   = [];
-    private $twig             = null;
-    private $sectionsFiles    = [];
-    private $config = [];
+    private $OnePage               = null;
+    private $variables             = []; //variables for twig templates
+    private $scripts               = []; //scripts to execute on page load
+    private $rendered              = false;
+    private $paths                 = [];
+    private static $twigExtensions = [];
+    private $twig                  = null;
+    private $sectionsFiles         = [];
+    private $config                = [];
 
     public function __construct(Loader &$OnePage)
     {
         $this->OnePage = $OnePage;
-        $this->paths = $OnePage->getConfig("paths");
-        $sections             = scandir($this->paths["sections"]);
+        $this->paths   = $OnePage->getConfig("paths");
+        $sections      = scandir($this->paths["sections"]);
         foreach ($sections as $i) {
             if (preg_match('/[^\.]/', $i)) {
-                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') $this->sectionsFiles[$i] = file_get_contents("{$this->paths['sections']}\\" . $i);
-                else $this->sectionsFiles[$i] = file_get_contents("/{$this->paths['sections']}/" . $i);
+                if (Loader::isWindows()) {
+                    $this->sectionsFiles[$i] = file_get_contents("{$this->paths['sections']}\\" . $i);
+                } else {
+                    $this->sectionsFiles[$i] = file_get_contents("/{$this->paths['sections']}/" . $i);
+                }
+
             }
         }
         $this->config = $OnePage->getConfig("renderer");
@@ -36,15 +40,14 @@ class Renderer
         array $variables = null,
         bool $is_string = false
     ) {
-        $errors = "";
-        $log = "";
+        $errors        = "";
+        $log           = "";
         $error_handler = $this->OnePage->getConfig("error_handler");
-        if($error_handler["debug_mode"])
-            {        
-                $logger = $this->OnePage->getLogger();
-                $errors = join("<br>",$logger->getHtmlErrors());
-                $log = join(";",$logger->getConsoleLog());
-            }
+        if ($error_handler["debug_mode"]) {
+            $logger = $this->OnePage->getLogger();
+            $errors = join("<br>", $logger->getHtmlErrors());
+            $log    = join(";", $logger->getConsoleLog());
+        }
         if (!$is_string) {
             /*file render*/
             $path = $this->paths["views"] . $name;
@@ -60,22 +63,39 @@ class Renderer
         if ($variables == null) {
             $variables = $this->variables;
         }
+        if (!isset($variables['title'])) {
+            $variables['title'] = $this->OnePage->getConfig("default_title");
+        }
         if ($this->OnePage->getFullMode()) {
             /*include headers only on get request*/
             $onepagejs    = file_get_contents(__dir__ . "/onepage.js"); //include onepagejs in library mode too
             $eval_scripts = $this->OnePage->getConfig('eval_scripts');
-            $template .= "<script type='text/javascript'>{$onepagejs};OnePage.site_url='{{site_url}}';OnePage.updateRoutes();OnePage.eval_scripts={$eval_scripts};" . join(";", $this->scripts) . "</script>";
+            $href = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+            $replaceState = "window.history.replaceState({'content':document.getElementById('content').innerHTML,'scripts':".json_encode(join(";", $this->scripts)).",'title':'{$variables['title']}'}, '', location.href);";
             $template = "{% extends 'base." . $this->OnePage->getConfig('templates_extension') . "' %}{% block content %}{$errors}<script>{$log}</script>{$template}{% endblock %}";
+            $extension = $this->OnePage->getConfig('templates_extension');
+            preg_match('/<head[^>]*>/', $this->sectionsFiles["base.{$extension}"],$headerTag);
+            $headerScript = "{$headerTag[0]}<script type='text/javascript'>{$onepagejs}</script>";
+            preg_match('/<\/body[^>]*>/', $this->sectionsFiles["base.{$extension}"],$bodyTag);
+            $bodyScript = "<script type='text/javascript'>OnePage.site_url='{{site_url}}';OnePage.updateRoutes();OnePage.eval_scripts={$eval_scripts};\n" . join(";", $this->scripts) . ";\n{$replaceState}</script>{$bodyTag[0]}";
+            $this->sectionsFiles["base.{$extension}"] = str_replace([$headerTag[0],$bodyTag[0]], [$headerScript,$bodyScript], $this->sectionsFiles["base.{$extension}"]);
         }
-        $variables['site_url']      = $this->OnePage->getConfig('site_url');
+        $site_url                   = $this->OnePage->getConfig('site_url');
+        $variables['site_url']      = $site_url;
         $this->sectionsFiles[$name] = $template;
-        if (!isset($variables['title'])) {
-            $variables['title'] = $this->OnePage->getConfig("default_title");
-        }
         foreach ($this->sectionsFiles as $key => $value) {
-            /*convert relative links url in absolute*/
-            $this->sectionsFiles[$key] = preg_replace('/(href|src)=[\'\"](?!#|(https?:)|(\/)|(\.\.)|({{))([^\'\"]+)[\'\"]/i', '\1="' . $this->OnePage->getConfig('site_url') . '\6"', $value);
+            //convert relative links url in absolute
+            $patters = [
+                '/(href|src)=[\'\"](?!#|(https?:)|(\/)|(\.\.)|({{))([^\'\"]+)[\'\"]/i',
+                '/route=[\"\']([^\"\']*)[\"\']/i',
+            ]; //relative routes
+            $replace = [
+                '\1="' . $site_url . '\6"',
+                'data-route="' . $site_url . '\1" href="' . $site_url . '\1"',
+            ]; //absolute routes
+            $this->sectionsFiles[$key] = preg_replace($patters, $replace, $value);
         }
+
         $loader     = new \Twig\Loader\ArrayLoader($this->sectionsFiles);
         $this->twig = new \Twig\Environment($loader);
 
@@ -103,8 +123,8 @@ class Renderer
                 "title"   => $this->variables["title"],
                 "content" => $output,
                 'scripts' => join(";", $this->scripts),
-                "errors" => $errors,
-                "console" => $log
+                "errors"  => $errors,
+                "console" => $log,
             ]);
         }
 
@@ -137,7 +157,8 @@ class Renderer
         Renderer::$twigExtensions[] = ["class" => $class, "callback" => $callback, "extension" => $extension];
     }
 
-    public static function getTwigExtensions(){
+    public static function getTwigExtensions()
+    {
         return Renderer::$twigExtensions;
     }
 
@@ -153,18 +174,16 @@ class Renderer
 
     public function addScript(string $script, bool $is_a_file = false)
     {
-        if ($is_a_file) {
-            $path = $this->root_dir . "/${script}";
-            if (file_exists($path)) {
-                $file = file_get_contents($path);
-                array_push($this->scripts, $path);
-            } else {
-                trigger_error("Script file doesn't exist", E_USER_NOTICE);
-            }
+        array_push($this->scripts, $script);
+    }
 
+    public function addScriptFile($path)
+    {
+        if (file_exists($path)) {
+            $file = file_get_contents($path);
+            array_push($this->scripts, $file);
         } else {
-            array_push($this->scripts, $script);
+            trigger_error("Script file doesn't exist", E_USER_NOTICE);
         }
-
     }
 }
