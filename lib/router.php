@@ -98,20 +98,21 @@ class Router
         }
 
         if ($noRoute) {
-            $noFiles = true;              
+            $noFiles = true;
             if ($this->config["auto_render"]) {
                 $controller = $this->OnePage->getControllerPath();
                 if (file_exists($controller)) {
-                    new Sandbox($controller, []);
+                    new Sandbox($controller);
                     $noFiles = false;
                 }else if($debugMode){
                     trigger_error("${controller} view doesn't exist", 1024);
                 }
                 $view = $this->paths["views"] . $this->OnePage->getTemplate();
+                $renderer = $this->OnePage->getRenderer();
                 if (file_exists($view)) {
-                    $this->OnePage->getRenderer()->autoRender($this->OnePage->getTemplate());
+                    $renderer->autoRender($this->OnePage->getTemplate());
                     $noFiles = false;
-                }else if($debugMode){
+                }else if($debugMode && !$renderer->getRendered()){
                     trigger_error("${view} view doesn't exist", 1024);
                 }
             }

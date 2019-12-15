@@ -118,8 +118,7 @@ class Renderer
 
         $output = $this->twig->render($this->templateString, $this->variables);
         if (!$this->OnePage->getFullMode()) {
-            header('Content-Type: application/json');
-            $output = json_encode([
+            return $this->renderJSON([
                 "title"   => $this->variables["title"],
                 "content" => $output,
                 'scripts' => join(";", $this->scripts),
@@ -127,10 +126,22 @@ class Renderer
                 "console" => $log,
             ]);
         }
-
         $this->rendered = true;
         return $output;
 
+    }
+
+    public function renderPlainText(string $text = ""){
+      header('Content-Type: text/plain');
+      $this->rendered = true;
+      return $text;
+    }
+
+    public function renderJSON($object = []){
+      header('Content-Type: application/json');
+      if(is_array($object))$object = json_encode($object);
+      $this->rendered = true;
+      return $object;
     }
 
     public function autoRender(string $path)
@@ -161,6 +172,8 @@ class Renderer
     {
         return Renderer::$twigExtensions;
     }
+
+    public function getRendered(){return $this->rendered;}
 
     public function addVariable(string $name, $value)
     {

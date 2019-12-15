@@ -1,7 +1,6 @@
 <?php
 require_once 'vendor/autoload.php';
 require_once 'lib/onepage.php';
-
 use OnePagePHP\Loader;
 
 //load the config.json and save it inside the $config variable
