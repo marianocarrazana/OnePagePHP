@@ -2,7 +2,7 @@
 namespace OnePagePHP;
 
 /**
- *
+ * Renderer
  */
 class Renderer
 {
@@ -43,22 +43,26 @@ class Renderer
         $errors        = "";
         $log           = "";
         $error_handler = $this->OnePage->getConfig("error_handler");
-        if ($error_handler["debug_mode"]) {
-            $logger = $this->OnePage->getLogger();
-            $errors = join("<br>", $logger->getHtmlErrors());
-            $log    = join(";", $logger->getConsoleLog());
-        }
+        
         if (!$is_string) {
-            /*file render*/
+            //file render
             $path = $this->paths["views"] . $name;
             if (!file_exists($path)) {
                 trigger_error("Template not found: {$path}", E_USER_ERROR);
             }
             $template = file_get_contents($path);
         } else {
-            /*string render*/
+            //string render
             $template = $name;
             $name     = "string_renderer.html";
+        }
+        $reactor = new Reactor;
+        $template = $reactor->parseStoreAttr($template,$this->OnePage->getUrl());
+        $template = $reactor->parseReactorTag($template,$this->OnePage->getUrl());
+        if ($error_handler["debug_mode"]) {
+            $logger = $this->OnePage->getLogger();
+            $errors = join("<br>", $logger->getHtmlErrors());
+            $log    = join(";", $logger->getConsoleLog());
         }
         if ($variables == null) {
             $variables = $this->variables;
@@ -67,7 +71,7 @@ class Renderer
             $variables['title'] = $this->OnePage->getConfig("default_title");
         }
         if ($this->OnePage->getFullMode()) {
-            /*include headers only on get request*/
+            //include headers only on get request
             $onepagejs    = file_get_contents(__dir__ . "/onepage.js"); //include onepagejs in library mode too
             $eval_scripts = $this->OnePage->getConfig('eval_scripts');
             $href = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";

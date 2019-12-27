@@ -4,6 +4,7 @@ namespace OnePagePHP;
 require_once __dir__ . '/router.php';
 require_once __dir__ . '/renderer.php';
 require_once __dir__ . '/errorhandler.php';
+require_once __dir__ . '/reactor.php';
 
 /**
  *
@@ -32,8 +33,8 @@ class Loader
             $GLOBALS[$config["error_handler"]["logger_global_variable"]] = $this->logger;
         }
         $headers = getallheaders();
-        if (isset($headers["X-OnePagePHP"])) {
-            $x_onepagephp   = json_decode($headers["X-OnePagePHP"], true);
+        if (isset($headers["X-Onepagephp"])) {
+            $x_onepagephp   = json_decode($headers["X-Onepagephp"], true);
             $this->fullMode = $x_onepagephp["fullMode"];
         } else {
             $this->fullMode = true;
